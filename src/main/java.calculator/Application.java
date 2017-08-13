@@ -3,6 +3,7 @@ package calculator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.text.DecimalFormat;
 import java.util.*;
 
 public class Application {
@@ -20,18 +21,34 @@ public class Application {
         numberMap.put("seven", 7.0);
         numberMap.put("eight", 8.0);
         numberMap.put("nine", 9.0);
-        return Collections.unmodifiableMap(numberMap);
+        return numberMap;
+    }
+
+    private static final List<String> additionAliases = Arrays.asList("add", "plus");
+    private static final List<String> subtractionAliases = Arrays.asList("subtract", "minus", "less");
+    private static final List<String> multiplicationAliases = Arrays.asList("multiplied-by", "times");
+    private static final List<String> divisionAliases = Arrays.asList("divided-by", "over");
+    private static final List<String> validOperations = getValidOperations();
+    private static List<String> getValidOperations() {
+        List<String> operationList = new ArrayList<>();
+        operationList.addAll(additionAliases);
+        operationList.addAll(subtractionAliases);
+        operationList.addAll(multiplicationAliases);
+        operationList.addAll(divisionAliases);
+        return operationList;
     }
 
     public static void main(String[] args) {
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+        DecimalFormat outputFormat = new DecimalFormat("0.##");
 
         boolean running = true;
         while(running) {
             String[] userInput = getUserInput(reader);
 
             if (userInputValid(userInput)) {
-                processUserInput(userInput);
+                Double outputNumber = processInputValues(userInput);
+                System.out.println(outputFormat.format(outputNumber));
             } else {
                 System.out.println("Invalid input. Exiting program.");
                 running = false;
@@ -41,6 +58,7 @@ public class Application {
 
     public static String[] getUserInput(BufferedReader reader) {
         System.out.println("Please enter a calculation: ");
+
         try {
             String input = reader.readLine().toLowerCase();
             return input.split("\\s+");
@@ -55,69 +73,73 @@ public class Application {
             return false;
         }
 
-        List valid_operarions = Arrays.asList("add", "sub", "mul", "div");
-
         for (int i=0; i < userInput.length; i++) {
             if (i % 2 == 0) {
                 if (!numberMap.containsKey(userInput[i]))
                     return false;
             } else {
-                if (!valid_operarions.contains(userInput[i]))
+                if (!validOperations.contains(userInput[i]))
                     return false;
             }
         }
         return true;
     }
 
-    public static void processUserInput(String[] userInput) {
-        Stack stackOne = new Stack();
-        Stack steckTwo = new Stack();
+    public static Double processInputValues(String[] inputValues) {
+        Stack stack = new Stack();
 
-        for (int i=0; i < userInput.length; i++) {
+        for (int i=0; i < inputValues.length; i++) {
             if (i % 2 == 0) {
-                stackOne.push(numberMap.get(userInput[i]));
+                stack.push(numberMap.get(inputValues[i]));
             } else {
-                stackOne.push(userInput[i]);
+                stack.push(inputValues[i]);
             }
         }
 
-        while (stackOne.size() > 2) {
-            Double number = (Double) stackOne.pop();
-            String operation = (String) stackOne.pop();
+        stack = processMulAndDiv(stack);
+        return processAddAndSub(stack);
+    }
 
-            if (operation.equals("mul")) {
-                Double second = (Double) stackOne.pop();
-                stackOne.push(second * number);
+    public static Stack processMulAndDiv(Stack inputStack) {
+        Stack outputStack = new Stack();
 
-            } else if (operation.equals("div")) {
-                Double second = (Double) stackOne.pop();
-                stackOne.push(second / number);
-            } else {
-                steckTwo.push(number);
-                steckTwo.push(operation);
-            }
-        }
-        steckTwo.push(stackOne.pop());
+        while (inputStack.size() > 2) {
+            Double number = (Double) inputStack.pop();
+            String operation = (String) inputStack.pop();
 
-        while (steckTwo.size() > 2) {
-            Double number = (Double) steckTwo.pop();
-            String operation = (String) steckTwo.pop();
+            if (multiplicationAliases.contains(operation)) {
+                Double additionalNumber = (Double) inputStack.pop();
+                inputStack.push(additionalNumber * number);
 
-            if (operation.equals("add")) {
-                Double second = (Double) steckTwo.pop();
-                steckTwo.push(second + number);
+            } else if (divisionAliases.contains(operation)) {
+                Double additionalNumber = (Double) inputStack.pop();
+                inputStack.push(additionalNumber / number);
 
             } else {
-                Double second = (Double) steckTwo.pop();
-                steckTwo.push(second - number);
+                outputStack.push(number);
+                outputStack.push(operation);
             }
-
-            stackOne.push(number);
-            stackOne.push(operation);
         }
-        stackOne.push(steckTwo.pop());
+        outputStack.push(inputStack.pop());
 
-        System.out.println(stackOne.pop());
-        return;
+        return outputStack;
+    }
+
+    public static Double processAddAndSub(Stack inputStack) {
+        Double resultValue = null;
+
+        while (inputStack.size() > 2) {
+            Double firstValue = (Double) inputStack.pop();
+            String operation = (String) inputStack.pop();
+            Double secondValue = (Double) inputStack.pop();
+
+            if (additionAliases.contains(operation)) {
+                resultValue = firstValue + secondValue;
+            } else {
+                resultValue = firstValue - secondValue;
+            }
+            inputStack.push(resultValue);
+        }
+        return (Double) inputStack.pop();
     }
 }
