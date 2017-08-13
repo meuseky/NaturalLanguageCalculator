@@ -126,7 +126,7 @@ public class Application {
     }
 
     public static Double processAddAndSub(Stack inputStack) {
-        Double resultValue = null;
+        Double resultValue;
 
         while (inputStack.size() > 2) {
             Double firstValue = (Double) inputStack.pop();
