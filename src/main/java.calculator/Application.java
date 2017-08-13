@@ -3,74 +3,121 @@ package calculator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 
 public class Application {
 
-    public static void main(String[] args) {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-        boolean running = true;
-
-        do {
-         String userInput = getUserInput(reader);
-         running = processUserInput(userInput);
-        } while(running);
+    private static final Map<String, Double> numberMap = createNumberMap();
+    private static Map<String, Double> createNumberMap() {
+        Map<String, Double> numberMap = new HashMap<>();
+        numberMap.put("zero", 0.0);
+        numberMap.put("one", 1.0);
+        numberMap.put("two", 2.0);
+        numberMap.put("three", 3.0);
+        numberMap.put("four", 4.0);
+        numberMap.put("five", 5.0);
+        numberMap.put("six", 6.0);
+        numberMap.put("seven", 7.0);
+        numberMap.put("eight", 8.0);
+        numberMap.put("nine", 9.0);
+        return Collections.unmodifiableMap(numberMap);
     }
 
-    public static String getUserInput(BufferedReader reader) {
-        System.out.println("Please enter a calculation: ");
-        try {
-            return reader.readLine();
-        } catch (IOException e) {
-            return "";
+    public static void main(String[] args) {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+
+        boolean running = true;
+        while(running) {
+            String[] userInput = getUserInput(reader);
+
+            if (userInputValid(userInput)) {
+                processUserInput(userInput);
+            } else {
+                System.out.println("Invalid input. Exiting program.");
+                running = false;
+            }
         }
     }
 
-    public static boolean processUserInput(String userInput) {
-        Map<String, Integer> numberMap = new HashMap<>();
-        numberMap.put("zero", 0);
-        numberMap.put("one", 1);
-        numberMap.put("two", 2);
-        numberMap.put("three", 3);
-        numberMap.put("four", 4);
-        numberMap.put("five", 5);
-        numberMap.put("six", 6);
-        numberMap.put("seven", 7);
-        numberMap.put("eight", 8);
-        numberMap.put("nine", 9);
+    public static String[] getUserInput(BufferedReader reader) {
+        System.out.println("Please enter a calculation: ");
+        try {
+            String input = reader.readLine().toLowerCase();
+            return input.split("\\s+");
+        } catch (IOException e) {
+            return new String[0];
+        }
+    }
 
-        // Issue multiple alias' for same command
-        Map<String, Runnable> operationMap = new HashMap<>();
-        operationMap.put("add", () -> System.out.println("cat"));
-        operationMap.put("subtract,", () -> System.out.println("hat"));
-        operationMap.put("times", () -> System.out.println("bat"));
-        operationMap.put("over", () -> System.out.println("tat"));
-
-        String[] tokens = userInput.split("\\s+");
-        // maybe convert to upper case here
-
+    public static boolean userInputValid(String[] userInput) {
         // An even number tokens means the statement is invalid
-        if (tokens.length % 2 == 0) {
+        if (userInput.length % 2 == 0) {
             return false;
         }
 
-        Stack stack = new Stack();
+        List valid_operarions = Arrays.asList("add", "sub", "mul", "div");
 
-        // Check if each token is valid
-        for (int i=0; i < tokens.length; i++) {
+        for (int i=0; i < userInput.length; i++) {
             if (i % 2 == 0) {
-                // check if token is a number
-                Integer number = numberMap.get(tokens[i]);
-                stack.push(number);
+                if (!numberMap.containsKey(userInput[i]))
+                    return false;
             } else {
-                // check if token is a command
-                Runnable operation = operationMap.get(tokens[i]);
-                stack.push(operation);
+                if (!valid_operarions.contains(userInput[i]))
+                    return false;
+            }
+        }
+        return true;
+    }
+
+    public static void processUserInput(String[] userInput) {
+        Stack stackOne = new Stack();
+        Stack steckTwo = new Stack();
+
+        for (int i=0; i < userInput.length; i++) {
+            if (i % 2 == 0) {
+                stackOne.push(numberMap.get(userInput[i]));
+            } else {
+                stackOne.push(userInput[i]);
             }
         }
 
-        return true;
+        while (stackOne.size() > 2) {
+            Double number = (Double) stackOne.pop();
+            String operation = (String) stackOne.pop();
+
+            if (operation.equals("mul")) {
+                Double second = (Double) stackOne.pop();
+                stackOne.push(second * number);
+
+            } else if (operation.equals("div")) {
+                Double second = (Double) stackOne.pop();
+                stackOne.push(second / number);
+            } else {
+                steckTwo.push(number);
+                steckTwo.push(operation);
+            }
+        }
+        steckTwo.push(stackOne.pop());
+
+        while (steckTwo.size() > 2) {
+            Double number = (Double) steckTwo.pop();
+            String operation = (String) steckTwo.pop();
+
+            if (operation.equals("add")) {
+                Double second = (Double) steckTwo.pop();
+                steckTwo.push(second + number);
+
+            } else {
+                Double second = (Double) steckTwo.pop();
+                steckTwo.push(second - number);
+            }
+
+            stackOne.push(number);
+            stackOne.push(operation);
+        }
+        stackOne.push(steckTwo.pop());
+
+        System.out.println(stackOne.pop());
+        return;
     }
 }
