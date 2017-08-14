@@ -100,7 +100,7 @@ public class Application {
         return processAddAndSub(stack);
     }
 
-    public static Stack processMulAndDiv(Stack inputStack) {
+    private static Stack processMulAndDiv(Stack inputStack) {
         Stack outputStack = new Stack();
 
         while (inputStack.size() > 2) {
@@ -125,7 +125,7 @@ public class Application {
         return outputStack;
     }
 
-    public static Double processAddAndSub(Stack inputStack) {
+    private static Double processAddAndSub(Stack inputStack) {
         Double resultValue;
 
         while (inputStack.size() > 2) {
